@@ -1,8 +1,8 @@
 <?php
 class OnThisDayBridge extends BridgeAbstract {
-    const NAME = 'On This Day Articles Bridge';
+    const NAME = 'On This Day Full Bridge';
     const URI = 'https://www.onthisday.com';
-    const DESCRIPTION = 'Fetches featured articles for the current date from On This Day.';
+    const DESCRIPTION = 'Fetches all events for the current date from On This Day.';
     const MAINTAINER = 'RSPN';
     const PARAMETERS = []; // No parameters required for this version.
 
@@ -10,30 +10,38 @@ class OnThisDayBridge extends BridgeAbstract {
         // Fetch the main page
         $html = getSimpleHTMLDOM(self::URI);
 
-        // Locate the featured article section
-        $featuredArticle = $html->find('div.featured-article', 0);
+        // Define sections to scrape
+        $sections = [
+            'Historical Events' => 'header.header-history',
+            'Film & TV' => 'header.header-film-tv',
+            'Music' => 'header.header-music',
+            'Sport' => 'header.header-sport',
+            'Birthdays' => 'header.section__heading a[href="today/birthdays.php"]',
+            'Deaths' => 'header.section__heading a[href="today/deaths.php"]',
+            'Weddings & Divorces' => 'header.section__heading a[href="today/weddings-divorces.php"]',
+        ];
 
-        if ($featuredArticle) {
-            $item = [];
+        foreach ($sections as $sectionName => $selector) {
+            $sectionHeader = $html->find($selector, 0);
 
-            // Extract the title
-            $header = $featuredArticle->find('header h3.poi__heading', 0);
-            $item['title'] = trim($header->plaintext);
+            if ($sectionHeader) {
+                $sectionList = $sectionHeader->parent()->find('ul.event-list, ul.photo-list', 0);
 
-            // Extract the article content
-            $content = $featuredArticle->find('p.linked_text', 0);
-            $item['content'] = trim($content->plaintext);
+                if ($sectionList) {
+                    foreach ($sectionList->find('li') as $element) {
+                        $item = [];
+                        $dateElement = $element->find('a.date', 0);
+                        $descriptionElement = $element->find('a', 1) ?? $element->find('span', 0);
 
-            // Extract the date
-            $date = $featuredArticle->find('span.linked_date', 0);
-            $item['timestamp'] = date('Y-m-d', strtotime(trim($date->plaintext)));
+                        // Generate item
+                        $item['title'] = '[' . $sectionName . '] ' . ($dateElement ? trim($dateElement->plaintext) . ': ' : '') . ($descriptionElement ? trim($descriptionElement->plaintext) : '');
+                        $item['uri'] = $dateElement ? self::URI . $dateElement->href : self::URI;
+                        $item['content'] = $element->innertext;
 
-            // Extract the article URL
-            $link = $featuredArticle->find('a', 0);
-            $item['uri'] = self::URI . $link->href;
-
-            // Add to items
-            $this->items[] = $item;
+                        $this->items[] = $item;
+                    }
+                }
+            }
         }
     }
 }
