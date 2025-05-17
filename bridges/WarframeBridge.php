@@ -6,7 +6,8 @@ class WarframeBridge extends BridgeAbstract
     const URI = 'https://www.warframe.com/search';
     const DESCRIPTION = 'Latest news articles from the official Warframe site';
     const MAINTAINER = 'Nebenfrau';
-
+    const CACHE_TTL = 604800; // so this is how u stop it making duplicates lol?
+    
     public function collectData()
     {
         $url = self::URI;
