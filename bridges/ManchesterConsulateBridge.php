@@ -7,8 +7,29 @@ class ManchesterConsulateBridge extends BridgeAbstract {
     const MAINTAINER = 'Nebenfrau';
     const PARAMETERS = array();
 
-    public function collectData(){
-        $html = getSimpleHTMLDOM(self::URI) or returnServerError('Could not load site');
+    // You can adjust these constants as needed
+    const USERAGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+    const TIMEOUT = 15; // seconds
+
+    public function collectData() {
+        // Set custom context options for useragent and timeout
+        $opts = [
+            'useragent' => self::USERAGENT,
+            'timeout' => self::TIMEOUT,
+        ];
+
+        // Try to fetch with custom options, fallback if unavailable
+        if (function_exists('getSimpleHTMLDOM')) {
+            $html = getSimpleHTMLDOM(self::URI, $opts);
+        } else {
+            // fallback, should not usually be needed
+            $html = getSimpleHTMLDOM(self::URI);
+        }
+
+        if (!$html) {
+            returnServerError('Could not load site (timeout or blocked). Try increasing timeout or check user agent.');
+        }
+
         // Find all articles in the main article list section
         foreach($html->find('section.article_list > div > article.article') as $article) {
             $item = array();
@@ -41,7 +62,6 @@ class ManchesterConsulateBridge extends BridgeAbstract {
                     $src = urljoin(self::URI, $src);
                 }
                 $img_html = '<img src="' . htmlspecialchars($src) . '" alt="' . htmlspecialchars($item['title']) . '" style="max-width:100%">';
-                // Removed: $item['enclosures'] = array($src);
                 $item['thumbnail'] = $src; // optional
             }
 
