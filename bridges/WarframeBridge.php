@@ -6,7 +6,7 @@ class WarframeBridge extends BridgeAbstract
     const URI = 'https://www.warframe.com/search';
     const DESCRIPTION = 'Latest news articles from the official Warframe site';
     const MAINTAINER = 'Nebenfrau';
-    const CACHE_TTL = 604800; // so this is how u stop it making duplicates lol?
+    const CACHE_TTL = 604800; // so this is how u stop it making duplicates lol?<this shit dont work
     
     public function collectData()
     {
@@ -41,8 +41,8 @@ class WarframeBridge extends BridgeAbstract
                 }
             }
 
-            // Prevent duplicates based on title + date
-            $uid = md5($title . $timestamp);
+            // Prevent duplicates using the article URL as a unique id
+            $uid = $uri;
 
             $this->items[] = [
                 'uid' => $uid,
